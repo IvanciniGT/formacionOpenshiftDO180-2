@@ -1,0 +1,50 @@
+kind:                       Namespace
+apiVersion:                 v1
+
+metadata:
+    name:                   namespace-ivan
+    
+---
+
+kind:                       Deployment
+apiVersion:                 apps/v1
+
+metadata:
+    name:                   despliegue-nginx-ivan
+    namespace:              namespace-ivan
+
+spec:
+    replicas:                       3
+    
+    selector:
+        matchLabels:
+            app:                    servidor-web
+            
+    template:
+        metadata:
+            name:                   plantilla-pod-nginx-ivan
+            labels:
+                app:                servidor-web   # (1)
+        spec:
+            containers:
+                - name:             contenedor-nginx
+                  image:            nginx:latest
+                  imagePullPolicy:  IfNotPresent
+---
+
+kind:                       Service # IP FIJA + nombre en dns
+apiVersion:                 v1
+
+metadata:
+    name:                   servidor-web
+    namespace:              namespace-ivan
+
+spec:
+    ports:
+        - port:             8765            # Este puerto se abre en la IP de balanceo
+          targetPort:       80              # Este es el puerto en el que funciona nginx en lso contenedores
+    selector: 
+        app:                servidor-web    # Tenemos 3 pods con esta etiqueta (ver 1)
+        
+
+---

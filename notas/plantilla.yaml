@@ -1,0 +1,147 @@
+
+# Podemos poner comentarios! Aleyuya!
+# En un fichero YAML puedo tener muchos DOCUMENTOS YAML
+---
+# Para indicar que un nuevo documento empieza, usamos ---.
+# Al primer documento no le hace falta los --- 
+# En ocasiones raras (a algún enfermo le gusta) se puede usar ... para indicar el final de un documento
+...
+---
+# Un documento YAML es un NODO
+--- 
+# En YAML hay 2 tipos de nodos: Escalares y Colecciones
+# Escalares: Un único valor: cadena, número, booleano, nulo
+# Colecciones: Muchos valores juntos... agrupados de alguna forma.. Los 2 más usados son las 
+# listas ordenadas y los mapas desordenados 
+
+--- 
+# Nodos escalares: Números:
+1234
+---
+-1234
+---
+0.1234
+---
+-.Nan # .nan, .NAN
+---
+-.inf # .inf, .INF
+---
+# Valores lógicos: 
+true # True, TRUE
+---
+false # False, FALSE
+
+# En ocasiones (especialmente se ve mucho ewn playbooks de Ansible) usan también:
+# on, ON, On
+# off, OFF, Off
+# yes, YES, Yes
+# no, NO, No
+# y
+# n
+# Esto está obsoleto.. Valía en YAML 1.1 pero en YAML1.2 ya no es así
+# Muchos programas lo siguen admitiendo por compatibilidad con versiones antiguas
+---
+# Textos
+Puedo '"escribir\ un 
+
+texto \n\tsin #comillas
+---
+'Puedo ''"escribir\ un 
+texto \n\tentre #comillas simples'
+---
+"Puedo '\"escribir\\ un 
+texto \n\tentre #comillas dobles"
+
+# En la práctica. SIEMPRE USAMOS LA SINTAXIS SIN COMILLAS, que es la recomendada para seres humanos!
+# Solo pondremos ' o " si tenemos dentro algo (otras '" o #) que nos joda.
+# Y nunca usaremos esta sintaxis cuando tenga 
+# textos que ocupen varias líneas. 
+# Para eso hay otras sintaxis especiales: literal y folded
+---
+|4+
+     Puedo escribir un texto
+    y ese texto se respeta 
+    literalmente al interpretarlo
+        con sus saltos de línea
+            y sus espacios en blanco
+            Sus caracteres especiales como # ' " \n \t
+---
+> 
+    docker container create 
+      --name minginx3 
+      -e VAR1=1 
+      -e VAR2=2 
+      -p 9191:80 
+      -v ./nginx.conf:/etc/nginx/conf.d/nginx.conf 
+      -v /home/ubuntu/environment/datos:/datos 
+      nginx:1.29
+---
+# Nodos colección: Listas ordenadas
+- Item 1
+- 33 
+- True
+# Sublistas
+- 
+                - Subitem 1
+                - Subitem 2
+                - Subitem 3
+-   - Subitem 1
+    - Subitem 2
+    - Subitem 3
+-
+ - Subitem A
+ - Subitem B
+ - Subitem C
+---
+# Hay una sintaxis alternativa para listas ordenadas:
+- Item 1
+- 34
+- True
+---
+[ "Item 1", 34, true ] # Esta no la usamos... solo está por compatibilidad con JSON
+---
+# Solo hay un caso donde esta sintaxis tiene sentido:
+# Cuando tengo una lista VACIA:
+[]
+---
+# Nodos colección: Mapas desordenados (Diccionarios, Maps, Arrays asociativos)
+clave1: valor1
+clave2: 456
+clave3: false
+clave4: 
+  - subitem1
+  - subitem2
+  - subitem3
+clave5:
+            subclave1: subvalor1
+            subclave2: 789
+            subclave3: true
+---
+# Hay una sintaxis alternativa para mapas desordenados:
+{ clave1: valor1, clave2: 456, clave3: false }
+# Esta no la usamos... solo está por compatibilidad con JSON
+---
+{
+  "clave1": "valor1", 
+  "clave2": 456, 
+  "clave3": false 
+}
+---
+
+# Solo hay un caso donde esta sintaxis tiene sentido:
+# Cuando tengo un mapa VACIO:
+{}
+---
+clave1: valor1
+clave2: valor2
+clave3: valor3
+---
+# Los mapas son DESORDENADOS... eso implica que lo de arriba, desde el punto de vista de YAML es 
+# EXACTAMENTE IGUAL que esto:
+clave3: valor3
+clave1: valor1
+clave2: valor2
+---
+
+# Cada programa que usa YAML define su propio ESQUEMA.
+# En ese esquema lo que de fine es el nombre de las claves y el tipo de dato que debe tener cada clave.

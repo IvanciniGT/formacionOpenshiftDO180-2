@@ -1,0 +1,12 @@
+# Un configmap es una tabla con propiedades configurables
+# Una tabla de configuraciones
+
+kind:                     ConfigMap
+apiVersion:               v1
+
+metadata:
+  name:                   datos_del_mariadb
+
+data:
+  usuario:                ivan
+  nombre_base_de_datos:   db

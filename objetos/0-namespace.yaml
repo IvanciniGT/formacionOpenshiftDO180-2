@@ -1,0 +1,47 @@
+# Esta parte va en cualquier fichero YAML de Kubernetes, 
+# con independencia del tipo de objeto
+
+kind:       Namespace     # Tipo de objeto que quiero definir
+apiVersion: v1
+            # Aquí ponemos la LIBRERIA que hay instalada en el cluster
+            # que gestiona ese tipo de objetos... y su versión:
+            # libreria/version
+            # Kubernetes trae de serie algunas librerías:
+            # core/v1 -> Namespace, Pod, Service, ConfigMap, Secret, PersistentVolumeClaim...
+            # apps/v2 -> Deployment, StatefulSet, DaemonSet...
+            # rbac.authorization.k8s.io/v1 -> Role, ClusterRole, RoleBinding, ClusterRoleBinding...
+            # networking.k8s.io/v1 -> Ingress, NetworkPolicy...
+            # autoscaling/v2 -> HorizontalPodAutoscaler...
+            # batch/v1 -> Job, CronJob...
+            # Cada tipo de objeto es gestionado por una librería 
+            # concreta... y al menos las básicas hay que conocerlas.
+            # Pero.. el hecho es que os dije que kubernetes es extensible.
+            # Lo que podemos hacer es instalar dentro del cluster OPERADORES
+            # Esos operadores añaden nuevas librerías al cluster, que permiten gestionar 
+            # nuevos tipos de objetos.
+            # Puedo instalar por ejemplo el operador CERT-MANAGER
+            # que añade al cluster la librería cert-manager.io/v1
+            # que permite gestionar objetos de tipo Certificate
+
+metadata:    # Algunos datos adicionales del objeto que queremos DEFINIR
+  name:   ivan     #NOMBRE DEL OBJETO
+  # Declaro que hay un namespace que se llama Iván.
+  # Fichero acabado
+
+---
+
+# Por cierto... en este fichero... cuantos documentos yaml tengo? 2
+# Cada documento define un namespace. 
+# Si le doy a kubernetes este documento, hará lo que sea que le pida con los 2 namespaces
+
+         # VERBO
+# kubectl create -f objetos/0-namespace.yaml
+# kubectl apply  -f objetos/0-namespace.yaml 
+#          ^^^^ (Similar al create, pero si el objeto ya existe, con una definición diferente,
+#                 lo intenta actualizar... no siempre se puede)
+# kubectl delete -f objetos/0-namespace.yaml
+
+kind:         Namespace
+apiVersion:   v1
+metadata:
+  name:       wordpress

@@ -1,0 +1,78 @@
+
+
+kind:                      Pod
+apiVersion:                v1
+
+metadata:
+  name:                    bbdd-mariadb
+  #namespace:               ivan Esto nunca lo hacemos
+  # Esa información la damos al aplicar/crear/borrar estos recursos... desde la CLI,
+  # ya que en lla mayor parte de los escenarios, querremos tener varias copias de 
+  # cada objeto: PRE, PROD... y cada una irá en un namespace distinto.
+  # kubectl create -f 1-pod.yaml -n ivan
+  labels: # etiquetas que se asocian al objeto... Todo objeto de kubernetes admite etiquetas
+  # Puedo poner lo que me venga en gana. Kubernetes no lo controla.. no pone objeciones
+  # Hay una etiqueta que TO DO EL MUNDO USA POR CONVENIO... la etiqueta app
+    app:     mariadb
+
+spec: # Nueva marquita... Salvo gloriosas excepciones (3/4) en 
+      # TO DO FICHERO se define un elemento spec.
+      # Aquí metemos el detalle de lo que sea que estemos definiendo
+      # Qué ponemos aquí? AH!!! Aquí ya se complica... 
+      # Esta es la parte que cambia entre los distintos tipos de objetos.
+      # En función del tipo de objeto, habrá una serie de campos obligatorios y otros opcionales.
+  containers:
+    - name:     contenedor-mariadb
+      image:    mariadb:5.7
+      imagePullPolicy: IfNotPresent # Always, IfNotPresent               #, Never
+      env:
+        - name:  MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: datos_del_mariadb
+              key: contrasena_usuario_root
+        - name:  MARIADB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: datos_del_mariadb
+              key: usuario
+        - name:  MARIADB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: datos_del_mariadb
+              key: contrasena
+        - name:  MARIADB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: datos_del_mariadb
+              key: nombre_base_de_datos
+        - name:  JUEGO_DE_CARACTERES
+          value: "utf8mb4"
+      ports: # Esto de aquí no tienen NADA QUE VER con los puertos que configuro en DOCKER
+      # En docker, en el bloque ports configuramos REDIRECCIONES DE PUERTOS 
+      # En kubernetes esto es PURA DOCUMENTACION. No tiene impacto en el entorno.
+      # Solo informo... a quién le pueda interesar... que este contenedor usa este puerto
+        - containerPort: 3306
+          name:          puerto-mariadb
+          protocol:      TCP
+          # Me temo que la EXPOSICION de servicios en KUBERNETES es con diferncia LO MAS COMPLEJO 
+          # de todo kubernetes... y no lo vamos a ver en este curso. Y nos pasarmos una tarde entera hablando de ello.
+          # Y tendremos que creare VARIOS OBJETOS para hacer esa exposición.
+          # Pero es que un entorno de producción es complejo... y requiere configurar muchas cosas.
+
+      #volumeMounts: # Si quiero que el contenedor use un volumen, lo monto
+      # Este fichero le crea desarrollo... y me da también un configmap y un secret de ejemplo ( o varios)!
+      # Este archivo le puedo aplicar en el entorno de PRE y PRO sin cambios... el mismo...
+      # El administrador del cluster se encargará de crear 2 configmaps distintos y 2 secrets distintos uno para cada entorno
+      # Basados en las plantillas que da el desarrollador.
+      # Uno para PRE y otro para PROD. Y todos felices! Cada uno con su responsabilidad.
+      #resouces:
+
+      # resources:
+      # volumeMounts:
+      # affinity:
+      # livenessProbe:
+      # readinessProbe:
+      # startupProbe:
+      # securityContext:
+      # command:

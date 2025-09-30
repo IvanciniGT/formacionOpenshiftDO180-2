@@ -240,7 +240,7 @@ ETCD, igual que muchas BBDD o indexadores (ElasticSearch), sistemas de mensajer√
                     T1.       T2
     mariadb1        DATO1     DATO2            < DATO1
      v
-    mariadb2*       DATO4     DATO3
+    mariadb2*       DATO1     DATO3
      v
     mariadb3        DATO2     DATO3            < DATO2
 

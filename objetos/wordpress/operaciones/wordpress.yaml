@@ -1,0 +1,73 @@
+# Namespace
+
+kind:                       Namespace
+apiVersion:                 v1
+
+metadata:
+    name:                   wordpress-ivan
+
+---
+# Limitar el namespace.
+
+kind:                       ResourceQuota
+apiVersion:                 v1
+
+metadata:
+    name:                   limite-recursos-namespace
+    namespace:              wordpress-ivan
+
+spec:
+    hard:
+        #pods:              10              # Máximo 10 pods en este namespace
+        requests.cpu:      4               # Máximo 4 CPUs en total en el namespace
+        requests.memory:   8Gi             # Máximo 8 GiB de RAM en total en el namespace
+        limits.cpu:        8               # Máximo 8 CPUs en total en el namespace
+        limits.memory:     16Gi            # Máximo 16 GiB de RAM en total en el namespace
+        #persistentvolumeclaims: 10  # Máximo 10 PVCs en el namespace
+        requests.storage:  100Gi
+        # Si tuviera varios tipos de almacenamiento, podría limitar cada uno por separado
+        #class1.storage.k8s.io/requests.storage: 80Gi
+        #class2.storage.k8s.io/requests.storage: 20Gi
+---
+
+# Cuenta de servicio (usuario de k8s)
+#kind:                       ServiceAccount
+#apiVersion:                 v1
+
+#metadata:
+#    name:                   ivan
+#    namespace:              wordpress-ivan
+
+---
+# Le asigno unos roles a la cuenta de servicio
+#kind:                       Role
+#apiVersion:                 rbac.authorization.k8s.io/v1
+
+#metadata:
+#    name:                   rol-ivan
+#    namespace:              wordpress-ivan
+
+#rules:
+#    - apiGroups:             [""]            # "" = core
+#      resources:             ["pods", "pods/log", "services", "persistentvolumeclaims"]
+#      verbs:                 ["get", "list", "watch", "create", "delete"]
+#    - apiGroups:             ["apps"]
+#      resources:             ["deployments", "replicasets", "statefulsets"]
+#      verbs:                 ["get", "list", "watch", "create", "delete"]
+
+#---
+#kind:                       RoleBinding
+#apiVersion:                 rbac.authorization.k8s.io/v1
+
+#metadata:
+#    name:                   rolbinding-ivan
+#    namespace:              wordpress-ivan
+
+#subjects:
+#    - kind:                 ServiceAccount
+#      name:                 ivan
+#      namespace:            wordpress-ivan  
+#roleRef:
+#    kind:                 Role
+#    name:                 rol-ivan
+#    apiGroup:             rbac.authorization.k8s.io 

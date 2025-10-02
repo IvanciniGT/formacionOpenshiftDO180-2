@@ -1,0 +1,267 @@
+
+# ConfigMap
+
+kind:                   ConfigMap
+apiVersion:             v1
+
+metadata:
+    name:               datos-del-wordpress
+    namespace:          wordpress-ivan
+
+data:
+    usuario:            mi_usuario
+    basededatos:        mi_basededatos
+
+---
+# Secret
+
+kind:                   Secret
+apiVersion:             v1
+metadata:
+    name:               datos-del-wordpress
+    namespace:          wordpress-ivan
+
+type:                   Opaque
+data:
+    contrasena:         bXlfcGFzc3dvcmQ=          # echo -n "mi_password" | base64
+    contrasena_root:      c2VxdW9pYQ==              # echo -n "sequoia" | base64
+
+---
+# PVC Mariadb
+
+apiVersion: v1
+kind:       PersistentVolumeClaim
+metadata:
+    name:               peticion-volumen-mariadb
+    namespace:          wordpress-ivan
+
+spec:
+    accessModes:
+        - ReadWriteOnce
+    resources:
+        requests:
+            storage: 20Gi
+    storageClassName: normalito
+---
+# PVC Wordpress
+apiVersion: v1
+kind:       PersistentVolumeClaim
+
+metadata:
+    name:               peticion-volumen-wordpress
+    namespace:          wordpress-ivan
+
+spec:
+    accessModes:
+        - ReadWriteOnce
+    resources:
+        requests:
+            storage: 20Gi
+    storageClassName: normalito
+---
+# Deployment: Apache + php + wordpress
+kind:                  Deployment
+apiVersion:            apps/v1
+
+metadata:
+    name:              despliegue-wordpress
+    namespace:         wordpress-ivan
+
+spec:
+    replicas:          2               # Número de pods que quiero tener en todo momento
+    selector:
+        matchLabels:
+            app:         wordpress       # (1) El deployment gestionará los pods que tengan
+    template:
+        metadata:
+            name:       plantilla-pod-wordpress
+            labels:
+                app:     wordpress       # (1) Esta etiqueta debe coincidir con la del
+        spec:
+            volumes:
+              - name: datos-wordpress
+                persistentVolumeClaim:
+                  claimName: peticion-volumen-wordpress
+            containers:
+                - name:     contenedor-wordpress
+                  image:    wordpress:6.8-php8.1-apache
+                  imagePullPolicy: IfNotPresent
+                  resources:
+                    requests:
+                        memory: 512Mi
+                        cpu:    500m
+                    limits:
+                        memory: 512Mi
+                        cpu:    2
+                  volumeMounts:
+                      - mountPath: /var/www/html
+                        name: datos-wordpress
+                  env:
+                    - name:  WORDPRESS_DB_HOST
+                      value: bbdd:3306        # Servicio de mariadb + puerto del servicio (no el del contenedor)
+                    - name:  WORDPRESS_DB_USER
+                      valueFrom:
+                        configMapKeyRef:
+                          name: datos-del-wordpress
+                          key: usuario
+                    - name:  WORDPRESS_DB_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: datos-del-wordpress
+                          key: contrasena
+                    - name:  WORDPRESS_DB_NAME
+                      valueFrom:
+                        configMapKeyRef:
+                          name: datos-del-wordpress
+                          key: basededatos
+---
+# Deployment / Statefulset
+
+kind:                   Deployment
+apiVersion:             apps/v1
+
+metadata:
+    name:               despliegue-mariadb
+    namespace:          wordpress-ivan
+
+spec:
+    replicas:           1               # Número de pods que quiero tener en todo momento
+    selector:
+        matchLabels:
+            app:        mariadb       # (1) El deployment gestionará los pods que tengan
+    template:
+        metadata:
+            name:       plantilla-pod-mariadb
+            labels:
+                app:    mariadb       # (1) Esta etiqueta debe coincidir con la del
+        spec:
+            volumes:
+              - name: datos-mariadb
+                persistentVolumeClaim:
+                  claimName: peticion-volumen-mariadb
+            containers:
+                - name:     contenedor-mariadb
+                  image:    mariadb:12.0
+                  imagePullPolicy: IfNotPresent
+                  volumeMounts:
+                      - mountPath: /var/lib/mysql
+                        name: datos-mariadb
+                  resources:
+                    requests:
+                        memory: 512Mi
+                        cpu:    500m
+                    limits:
+                        memory: 512Mi
+                        cpu:    2
+                  env:
+                    - name:  MARIADB_ROOT_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: datos-del-wordpress
+                          key: contrasena_root
+                    - name:  MARIADB_USER
+                      valueFrom:
+                        configMapKeyRef:
+                          name: datos-del-wordpress
+                          key: usuario
+                    - name:  MARIADB_PASSWORD
+                      valueFrom:
+                         secretKeyRef:
+                            name: datos-del-wordpress
+                            key: contrasena
+                    - name:  MARIADB_DATABASE
+                      valueFrom:
+                         configMapKeyRef:
+                            name: datos-del-wordpress
+                            key: basededatos
+---    
+# Service Mariadb
+
+kind:        Service
+apiVersion:  v1
+
+metadata:
+  name:      bbdd      # Este es el nombre que se da de alta en el DNS interno de kubernetes
+                       # Asociado a una IP FIJA, que el propio cluster asigna
+  namespace: wordpress-ivan
+
+spec:
+    #type:      ClusterIP   # Es el valor por defecto. Son los que sirven
+    ports:
+        - port:        3306        # Puerto de la ip fija del servicio
+          targetPort:  3306        # Puerto del contenedor al que se redirige el tráfico
+    selector:
+        app:         mariadb      # El servicio selecciona los pods (del mismo namespace)
+---
+
+# Service wordpress (nodeport) ---> ClusterIP
+kind:        Service
+apiVersion:  v1
+
+metadata:
+  name:      wordpress
+  namespace: wordpress-ivan
+
+spec:
+    type:      ClusterIP   # Este tipo de servicio es accesible desde fuera del cluster
+    ports:
+        - port:        80        # Puerto de la ip fija del servicio
+          targetPort:  80        # Puerto del contenedor al que se redirige el tráfico
+          # No solemos hacerlo... ya que no sabemos si otro equipo ha desplegado una app en ese puerto.
+    selector:
+        app:         wordpress
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: wordpress
+    namespace: wordpress-ivan
+spec:
+    ingressClassName: nginx
+    rules:
+      - host: miweb.miempresa.com
+        http:
+          paths:
+            - pathType: Prefix
+              backend:
+                service:
+                  name: wordpress
+                  port:
+                    number: 80
+              path: /
+---
+# TODO: Proteger la BBDD de comunicaciones no autorizadas ... mediante reglas de firewall.
+# Solo el wordpress puede conectar a la BBDD
+# NetworkPolicy
+---
+# TODO: HPA: Horizontal pod autoscaler en base a uso de cpu.
+# Me habéis visto montar algún tipo de sistema recolector de métricas en el cluster? NO
+# Cuando montemos en el cluster algo que sea capaz de recopilar métricas, podremos montar el hpa.
+
+kind:                       HorizontalPodAutoscaler
+apiVersion:                 autoscaling/v2
+metadata:
+    name:                   hpa-wordpress
+    namespace:              wordpress-ivan
+
+spec:
+    scaleTargetRef:
+        kind:               Deployment
+        name:               despliegue-wordpress
+        apiVersion:         apps/v1
+    minReplicas:            2
+    maxReplicas:            4
+
+    metrics:
+      - type: Resource
+        resource:
+          name: memory
+          target:
+            type: Utilization
+            averageUtilization: 1
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 50
